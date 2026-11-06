@@ -1,0 +1,77 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: ghcr.io/qmk/qmk_cli
+
+    steps:
+      - name: Check out this repo
+        uses: actions/checkout@v4
+        with:
+          path: config
+
+      # Vial is a fork of QMK: the vial-qmk tree is what carries VIAL_ENABLE,
+      # so the keymap cannot be built against upstream qmk_firmware.
+      - name: Check out vial-qmk
+        uses: actions/checkout@v4
+        with:
+          repository: vial-kb/vial-qmk
+          path: vial-qmk
+          submodules: recursive
+
+      - name: Add the Totem keyboard to the tree
+        run: cp -r config/totem vial-qmk/keyboards/totem
+
+      - name: Build both halves
+        working-directory: vial-qmk
+        run: |
+          make git-submodule
+          # Handedness comes from the bootloader target, not from EEPROM:
+          # each half gets its side baked in at build time.
+          make totem:vial:uf2-split-left
+          make totem:vial:uf2-split-right
+
+      - name: Collect the firmware
+        run: |
+          mkdir -p firmware
+          cp vial-qmk/*.uf2 firmware/ 2>/dev/null || true
+          ls -la firmware/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firmware
+          path: firmware/*.uf2
+
+  release:
+    name: Publish release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: firmware
+          path: firmware
+
+      # One single zip holding every .uf2, never loose assets.
+      - name: Package the firmware into a single zip
+        run: |
+          cd firmware
+          zip -j "../Totem-Vial-${GITHUB_REF_NAME}.zip" *.uf2
+          cd ..
+          unzip -l "Totem-Vial-${GITHUB_REF_NAME}.zip"
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: Totem-Vial-${{ github.ref_name }}.zip
