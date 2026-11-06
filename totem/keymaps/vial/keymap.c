@@ -215,7 +215,11 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 } else {
                     keymap_config.swap_lctl_lgui = false; // ─── WIN
                 }
-                eeconfig_update_keymap(keymap_config.raw);
+                /* CODEKEEB: current vial-qmk takes a pointer to the
+                   struct; the old API took the raw word. Passing .raw
+                   here is an int-to-pointer conversion and the build
+                   fails. */
+                eeconfig_update_keymap(&keymap_config);
                 clear_keyboard(); // ──── clear to prevent stuck keys
                 return false;
             }
