@@ -10,11 +10,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # Pinned, not :latest. vial-qmk is a fork of an older QMK and its python
-    # helpers use ast.Num, which Python 3.12 removed -- the current qmk_cli
-    # image ships 3.12 and every build dies with "module 'ast' has no
-    # attribute 'Num'". This tag still carries an older interpreter.
-    container: ghcr.io/qmk/qmk_cli:2023-11-13
 
     steps:
       - name: Check out this repo
@@ -31,6 +26,22 @@ jobs:
           path: vial-qmk
           submodules: recursive
 
+      # Not the qmk_cli container: it ships Python 3.12, which removed
+      # ast.Num, and vial-qmk's helpers still use it -- every build dies with
+      # "module 'ast' has no attribute 'Num'". 3.11 is the last one that works.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install the toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-arm-none-eabi binutils-arm-none-eabi \
+                                  libnewlib-arm-none-eabi git unzip zip \
+                                  python3-pip
+          python -m pip install --upgrade pip
+          python -m pip install qmk
+
       - name: Add the Totem keyboard to the tree
         run: cp -r config/totem vial-qmk/keyboards/totem
 
@@ -46,7 +57,7 @@ jobs:
       - name: Collect the firmware
         run: |
           mkdir -p firmware
-          cp vial-qmk/*.uf2 firmware/ 2>/dev/null || true
+          find vial-qmk -maxdepth 1 -name "*.uf2" -exec cp {} firmware/ \;
           ls -la firmware/
 
       - uses: actions/upload-artifact@v4
