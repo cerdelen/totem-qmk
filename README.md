@@ -51,27 +51,30 @@ to be quick.
 
 ## The cable
 
-The halves talk over **full duplex serial** — TX on GP0 and RX on GP1 — so
-both data lines have to reach the other side. Use a **TRRS** cable (four
-contacts, three rings on the plug). A TRS cable has only three contacts: it
-still carries power, so the far half looks alive, but one data line is
-missing and the halves never talk.
+The halves talk over **half duplex serial** on a single data line (GP0),
+the same wiring the stock firmware uses. A standard **TRRS** cable works.
 
 ## If the halves do not talk to each other
 
-The telltale sign is that each half works on its own whenever USB is
-plugged into *it*, and the other half gets power but does nothing.
+The telltale sign is that each half types its own keys whenever USB is
+plugged into *it*, while the other half gets power but does nothing.
 
-1. **Check the cable is TRRS**, four contacts (see above). This is the
-   first thing to rule out.
-2. **Flash the right file to the right side.** `totem_vial_left.uf2` goes
-   on the left half and `totem_vial_right.uf2` on the right. These builds
-   carry the side inside them, so swapping them leaves two halves that both
-   think they are the same side. Reflash each half with its own file.
-3. **Check the TRRS jacks.** On the half that stays dead, the data pins of
-   the jack (GP0 and GP1) are the usual suspects: a cold joint there still
-   passes power through the outer contacts while the data lines never make
-   contact. Reflow both jacks before suspecting anything else.
+**The usual cause is the wrong Vial build.** The firmware published by the
+keyboard's author is compiled for **full duplex** serial, which needs a
+second data line (GP1) that these boards do not use. Flash it on one of
+these and the halves can never reach each other, with no fault in the
+hardware. The builds in this repo are compiled for half duplex instead, so
+use these.
+
+If you are on the author's build and want the keyboard working right now,
+`totem_default.uf2` is the stock firmware and talks over half duplex — you
+lose Vial until you flash the build from here.
+
+If the halves still do not talk after flashing these files to the correct
+sides, then look at the hardware: with the cable plugged into both halves,
+check continuity between **GP0 on one board and GP0 on the other**. The
+data pin of a TRRS jack can be open while the outer contacts still pass
+power, which looks exactly like this.
 
 ## Remapping with Vial
 
