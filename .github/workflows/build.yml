@@ -10,7 +10,11 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: ghcr.io/qmk/qmk_cli
+    # Pinned, not :latest. vial-qmk is a fork of an older QMK and its python
+    # helpers use ast.Num, which Python 3.12 removed -- the current qmk_cli
+    # image ships 3.12 and every build dies with "module 'ast' has no
+    # attribute 'Num'". This tag still carries an older interpreter.
+    container: ghcr.io/qmk/qmk_cli:2023-11-13
 
     steps:
       - name: Check out this repo
