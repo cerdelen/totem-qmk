@@ -82,10 +82,19 @@ jobs:
       contents: write
 
     steps:
+      - uses: actions/checkout@v4
+        with:
+          path: config
+
       - uses: actions/download-artifact@v4
         with:
           name: firmware
           path: firmware
+
+      # The stock firmware rides along as a fallback: it is the author's
+      # half-duplex build, so it always links these halves, just without Vial.
+      - name: Add the stock fallback
+        run: cp config/firmware/totem_default.uf2 firmware/
 
       # One single zip holding every .uf2, never loose assets.
       - name: Package the firmware into a single zip
