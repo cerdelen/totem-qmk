@@ -10,6 +10,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # A real build takes well under a minute. Without a cap, a step that
+    # waits on something that never comes ran for GitHub's full 6 hours.
+    timeout-minutes: 30
 
     steps:
       - name: Check out this repo
@@ -45,19 +48,24 @@ jobs:
       - name: Add the Totem keyboard to the tree
         run: cp -r config/totem vial-qmk/keyboards/totem
 
-      - name: Build both halves
+      - name: Build
         working-directory: vial-qmk
         run: |
           make git-submodule
-          # Handedness comes from the bootloader target, not from EEPROM:
-          # each half gets its side baked in at build time.
-          make totem:vial:uf2-split-left
-          make totem:vial:uf2-split-right
+          # Plain build target. NOT uf2-split-left/right: those are FLASH
+          # targets -- after building they sit waiting for an RP2040 to
+          # appear over USB, which never happens on a runner, and the job
+          # hung until GitHub killed it.
+          #
+          # One binary serves both halves. Like the stock totem_default,
+          # this build has no EE_HANDS, so QMK takes the half with USB as
+          # the left one -- the USB cable goes in the left half.
+          make totem:vial
 
       - name: Collect the firmware
         run: |
           mkdir -p firmware
-          find vial-qmk -maxdepth 1 -name "*.uf2" -exec cp {} firmware/ \;
+          cp vial-qmk/totem_vial.uf2 firmware/
           ls -la firmware/
 
       - uses: actions/upload-artifact@v4

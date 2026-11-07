@@ -26,9 +26,10 @@
 #define SERIAL_PIO_USE_PIO1
 
 /*
- * EE_HANDS is deliberately NOT set, matching the working default build:
- * handedness comes from the left/right bootloader target at flash time,
- * so there is no separate handedness-writing step for the customer.
+ * EE_HANDS is deliberately NOT set, matching the working default build.
+ * With no handedness source configured QMK treats the half with USB as the
+ * left one, so a single binary serves both halves and the USB cable goes
+ * in the left half -- exactly how the stock totem_default behaves.
  */
 
 #define RP2040_BOOTLOADER_DOUBLE_TAP_RESET
